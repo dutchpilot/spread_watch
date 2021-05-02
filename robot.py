@@ -36,7 +36,7 @@ def process(json_data, count):
     vol_bid = 1
     vol_ask = 1
     min_price = 0
-    max_price = 99999
+    max_price = 999999
     print('----------------------------------------------------------------------------------')
 
     best_bid = json_data['result']['bids'][0][0]
