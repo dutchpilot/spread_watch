@@ -1,7 +1,6 @@
 import ftx
 import requests
 import config
-from threading import Timer
 
 api_endpoint = "https://ftx.com/api/markets/RAY-PERP/orderbook?depth=100"
 
@@ -32,11 +31,12 @@ def process(json_data, count):
     min_price_target_found = False
     min_price_target = 0
     min_interval = 0.1
-    UP_BID = 15000
-    UP_ASK = 15000
-    VOL_BID = 1
-    VOL_ASK = 1
+    up_bid = 15000
+    up_ask = 15000
+    vol_bid = 1
+    vol_ask = 1
     min_price = 0
+    max_price = 99999
     print('----------------------------------------------------------------------------------')
 
     best_bid = json_data['result']['bids'][0][0]
@@ -52,7 +52,7 @@ def process(json_data, count):
             min_k = k
             max_target_found = True
 
-        if k < UP_BID:
+        if k < up_bid:
             min_price = item[0]
             max_k = k
         elif not min_price_target_found:
@@ -60,7 +60,9 @@ def process(json_data, count):
             k_target = k
             min_price_target_found = True
 
-    print('BID ' + str(count).ljust(6) + (str(min_k) + ' (' + str(max_price) + ')').ljust(18) + ' <-> ' + (str(max_k) + ' (' + str(min_price) + ')').ljust(18) + ': Cur = ' + str(current_price_bid).ljust(7) + ' [' + str(min_price_target).ljust(7) + '] MaxVol=' + str(k_target))
+    print('BID ' + str(count).ljust(6) + (str(min_k) + ' (' + str(max_price) + ')').ljust(18) + ' <-> ' + (str(max_k) +
+          ' (' + str(min_price) + ')').ljust(18) + ': Cur = ' + str(current_price_bid).ljust(7) + ' [' +
+          str(min_price_target).ljust(7) + '] MaxVol=' + str(k_target))
 
     print(order_id_bid)
 
@@ -69,12 +71,13 @@ def process(json_data, count):
         empty_bid = True
     else:
         if empty_bid and (best_bid - current_price_bid > min_interval):
-            result = client.place_order('RAY-PERP', 'buy', min_price_target + 0.0001, VOL_BID)
+            result = client.place_order('RAY-PERP', 'buy', min_price_target + 0.0001, vol_bid)
             order_id_bid = result['id']
             print('          *** Bid Place order ' + str(order_id_bid) + ' ***')
             current_price_bid = min_price_target + 0.0001
             empty_bid = False
-        elif (not empty_bid) and ((current_price_bid < min_price) or (current_price_bid > max_price) or (min_price >= max_price) or (best_bid - current_price_bid <= min_interval)):
+        elif (not empty_bid) and ((current_price_bid < min_price) or (current_price_bid > max_price) or
+                                  (min_price >= max_price) or (best_bid - current_price_bid <= min_interval)):
             client.cancel_order(order_id_bid)
             print('          Bid order ' + str(order_id_bid) + ' CANCELED')
             empty_bid = True
@@ -100,7 +103,7 @@ def process(json_data, count):
             min_k = k
             min_price_target_found = True
 
-        if k < UP_ASK:
+        if k < up_ask:
             max_price = item[0]
             max_k = k
         elif not max_price_target_found:
@@ -108,19 +111,23 @@ def process(json_data, count):
             k_target = k
             max_price_target_found = True
 
-    print('ASK ' + str(count).ljust(6) + (str(min_k) + ' (' + str(min_price) + ')').ljust(18) + ' <-> ' + (str(max_k) + ' (' + str(max_price) + ')').ljust(18) + ': Cur = ' + str(current_price_ask).ljust(7) + ' [' + str(max_price_target).ljust(7) + '] MaxVol=' + str(k_target))
+    print('ASK ' + str(count).ljust(6) + (str(min_k) + ' (' + str(min_price) + ')').ljust(18) + ' <-> ' + (str(max_k) +
+          ' (' + str(max_price) + ')').ljust(18) + ': Cur = ' + str(current_price_ask).ljust(7) + ' [' +
+          str(max_price_target).ljust(7) + '] MaxVol=' + str(k_target))
 
     if (not empty_ask) and (count == 1):
         client.cancel_order(order_id_ask)
         empty_ask = True
     else:
         if empty_ask and (current_price_ask - best_ask > min_interval):
-            result = client.place_order('RAY-PERP', 'sell', max_price_target - 0.0001, VOL_ASK)
+            result = client.place_order('RAY-PERP', 'sell', max_price_target - 0.0001, vol_ask)
             order_id_ask = result['id']
             print('          *** Ask Place order ' + str(order_id_ask) + ' ***')
             current_price_ask = max_price_target - 0.0001
             empty_ask = False
-        elif (not empty_ask) and ((current_price_ask < min_price) or (current_price_ask > max_price) or (min_price >= max_price) or (current_price_ask - best_ask <= min_interval)):
+        elif (not empty_ask) and ((current_price_ask < min_price) or (current_price_ask > max_price) or
+                                  (min_price >= max_price) or
+                                  (current_price_ask - best_ask <= min_interval)):
             client.cancel_order(order_id_ask)
             print('          Ask order ' + str(order_id_ask) + ' CANCELED')
             empty_ask = True
